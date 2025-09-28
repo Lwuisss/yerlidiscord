@@ -1,0 +1,6 @@
+{
+    "template": "node",
+    "staticServer": {
+      "port": 3000
+    }
+  }
