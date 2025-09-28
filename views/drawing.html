@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Çizim Kanalı - AgaNiggaCord</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #2f3136; /* Discord arkaplan rengi */
+        color: #d3d3d3;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      .drawing-container {
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+        background: #36393f;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+      #drawingCanvas {
+        border: 1px solid #4f545c;
+        background-color: #ffffff; /* Beyaz çizim ekranı */
+        cursor: crosshair;
+      }
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 150px;
+      }
+      .control-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .control-group input[type="color"],
+      .control-group input[type="range"] {
+        width: 100%;
+      }
+      #clearButton {
+        padding: 10px;
+        background-color: #f04747;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      #clearButton:hover {
+        background-color: #c34040;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🎨 Çizim Kanalı</h1>
+
+    <div class="drawing-container">
+      <div class="controls">
+        <div class="control-group">
+          <label for="colorPicker">Renk Seç:</label>
+          <input type="color" id="colorPicker" value="#000000" />
+        </div>
+        <div class="control-group">
+          <label for="brushSize"
+            >Kalem Boyutu (<span id="sizeValue">5</span>):</label
+          >
+          <input type="range" id="brushSize" min="1" max="20" value="5" />
+        </div>
+        <button id="clearButton">Ekranı Temizle</button>
+      </div>
+      <canvas id="drawingCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const canvas = document.getElementById("drawingCanvas");
+      const ctx = canvas.getContext("2d");
+      const colorPicker = document.getElementById("colorPicker");
+      const brushSize = document.getElementById("brushSize");
+      const sizeValue = document.getElementById("sizeValue");
+      const clearButton = document.getElementById("clearButton");
+
+      let isDrawing = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      // Fırça ayarları
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = brushSize.value;
+      ctx.strokeStyle = colorPicker.value;
+
+      // Boyut göstergesini güncelle
+      brushSize.addEventListener("input", () => {
+        ctx.lineWidth = brushSize.value;
+        sizeValue.textContent = brushSize.value;
+      });
+
+      // Renk değiştirme
+      colorPicker.addEventListener("input", () => {
+        ctx.strokeStyle = colorPicker.value;
+      });
+
+      // Çizim Başlatma
+      canvas.addEventListener("mousedown", (e) => {
+        isDrawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+      });
+
+      // Çizim İşlemi
+      canvas.addEventListener("mousemove", (e) => {
+        if (!isDrawing) return;
+
+        const currentX = e.offsetX;
+        const currentY = e.offsetY;
+        const color = colorPicker.value;
+        const size = brushSize.value;
+
+        // Kendi canvasına çiz
+        drawLine(lastX, lastY, currentX, currentY, color, size);
+
+        // Çizimi sunucuya gönder
+        socket.emit("draw", {
+          x1: lastX,
+          y1: lastY,
+          x2: currentX,
+          y2: currentY,
+          color: color,
+          size: size,
+        });
+
+        [lastX, lastY] = [currentX, currentY];
+      });
+
+      // Çizim Bitirme
+      canvas.addEventListener("mouseup", () => (isDrawing = false));
+      canvas.addEventListener("mouseout", () => (isDrawing = false));
+
+      // Çizim Fonksiyonu
+      function drawLine(x1, y1, x2, y2, color, size) {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      // Sunucudan gelen çizimi işle
+      socket.on("draw", (data) => {
+        drawLine(data.x1, data.y1, data.x2, data.y2, data.color, data.size);
+      });
+
+      // Ekranı Temizle butonu
+      clearButton.addEventListener("click", () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        socket.emit("clearCanvas"); // Sunucuya temizleme isteği gönder
+      });
+
+      // Sunucudan gelen temizleme isteğini işle
+      socket.on("clearCanvas", () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+    </script>
+  </body>
+</html>

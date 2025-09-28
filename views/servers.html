@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgaNiggaCord - Sunucular</title>
+    <style>
+      /* Temel Stiller */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #36393f;
+        color: #d3d3d3;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        min-height: 100vh;
+        position: relative;
+      }
+      .sidebar {
+        width: 240px;
+        background: #121214;
+        height: 100vh;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        z-index: 5;
+        position: relative;
+        padding-bottom: 70px;
+        box-sizing: border-box;
+      }
+      .sidebar h2 {
+        margin: 0 0 20px;
+        font-size: 18px;
+      }
+      .channel-item {
+        padding: 10px;
+        margin: 5px 0;
+        background: #1a1a1e;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.1s;
+      }
+      .channel-item:hover,
+      .channel-item.selected {
+        background: #252529;
+      }
+      /* Yeni Kanal Tipi: Link */
+      .channel-link {
+        color: #d3d3d3;
+        text-decoration: none;
+        display: block;
+        padding: 10px;
+        margin: 5px 0;
+        background: #1a1a1e;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.1s;
+      }
+      .channel-link:hover {
+        background: #252529;
+      }
+
+      .user-list {
+        margin-top: 20px;
+        padding-bottom: 10px;
+      }
+      .user-list h2 {
+        margin-top: 15px;
+        margin-bottom: 10px;
+        font-size: 16px;
+        color: #ccc;
+      }
+      .user-item {
+        display: flex;
+        align-items: center;
+        padding: 5px 10px;
+        font-size: 14px;
+      }
+      .user-item .status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      .user-item .online {
+        background: #43b581;
+      }
+      .user-item .offline {
+        background: #747f8d;
+      }
+
+      /* Sohbet Alanı */
+      .chat-area {
+        flex: 1;
+        background: #36393f;
+        display: none;
+        flex-direction: column;
+        height: 100vh;
+        padding: 0;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+      }
+      .chat-area.active {
+        display: flex;
+      }
+      .chat-header {
+        padding: 10px 20px;
+        background: #2f3136;
+        border-bottom: 1px solid #202225;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 2;
+      }
+      .chat-header h1 {
+        margin: 0;
+        font-size: 20px;
+      }
+      .creator-info {
+        font-size: 12px;
+        color: #888;
+        padding-right: 10px;
+      }
+
+      /* Mesajlar Alanı */
+      .messages-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 15px 20px 0 20px;
+        display: flex;
+        flex-direction: column;
+      }
+      .message {
+        padding: 5px 0;
+        display: flex;
+        align-items: flex-start;
+        position: relative;
+        padding-right: 50px;
+      }
+      .message.compact {
+        padding-top: 2px;
+      }
+      .message:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+
+      /* Profil Resmi Bölümü */
+      .message-avatar {
+        width: 40px;
+        height: 40px;
+        margin-right: 16px;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+      .message-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .message.compact .message-avatar {
+        visibility: hidden;
+      }
+
+      .message-content-wrapper {
+        flex-grow: 1;
+      }
+      .message-header {
+        display: flex;
+        align-items: baseline;
+        margin-bottom: 2px;
+      }
+      .message.compact .message-header {
+        display: none;
+      }
+      .message .username {
+        font-weight: bold;
+        margin-right: 8px;
+        color: #fff;
+        font-size: 15px;
+      }
+      .message .time {
+        font-size: 10px;
+        color: #888;
+      }
+      .message-text {
+        color: #d3d3d3;
+        font-size: 15px;
+        word-wrap: break-word;
+      }
+      .message img.gif {
+        max-width: 250px;
+        height: auto;
+        border-radius: 4px;
+        margin-top: 5px;
+        display: block;
+      }
+
+      /* Sabitlenmiş Mesaj */
+      .pinned-message {
+        background-color: #4f545c;
+        border-left: 4px solid #f0b938;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .pinned-message strong {
+        color: #fff;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      /* Mesaj Sil Butonu */
+      .delete-button {
+        position: absolute;
+        top: 0px;
+        right: 10px;
+        background: #40444b;
+        color: #f04747;
+        border: none;
+        border-radius: 4px;
+        padding: 5px 8px;
+        cursor: pointer;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+        height: 25px;
+        line-height: 15px;
+      }
+      .message:hover .delete-button {
+        opacity: 1;
+      }
+      .delete-button:hover {
+        background: #c34040;
+        color: #fff;
+      }
+
+      /* Kullanıcı Bilgi Paneli */
+      .user-panel {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #292b2f;
+        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+        height: 60px;
+        box-sizing: border-box;
+        border-top: 1px solid #1f2124;
+      }
+      .user-info {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+      }
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 8px;
+        border: 2px solid #43b581;
+        cursor: pointer; /* Avatarı değiştirmek için tıklanabilir */
+      }
+      .user-names {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+      }
+      .user-names strong {
+        font-size: 14px;
+        color: #fff;
+      }
+      .user-names small {
+        font-size: 12px;
+        color: #b9bbbe;
+      }
+      /* Eski Mikrofon/Kulaklık Kontrolleri kaldırıldı */
+      .user-controls {
+        display: none;
+      }
+
+      /* Giriş Alanı */
+      .input-wrapper {
+        padding: 10px 20px 24px 20px;
+        position: relative;
+      }
+      .input-container {
+        display: flex;
+        background: #40444b;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .input-container button {
+        padding: 10px 15px;
+        background: #5865f2;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s;
+      }
+      .input-container button:hover {
+        background: #4e5d94;
+      }
+      .input-container input {
+        flex-grow: 1;
+        padding: 10px 15px;
+        border: none;
+        background: #40444b;
+        color: #d3d3d3;
+        font-size: 16px;
+        outline: none;
+      }
+      .input-container input::placeholder {
+        color: #a3a3a3;
+      }
+
+      /* Modal Stilleri */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-content {
+        background-color: #36393f;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.5);
+      }
+      .close-button {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .close-button:hover,
+      .close-button:focus {
+        color: #fff;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      #gifSearchInput,
+      #avatarUrlInput {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        background: #40444b;
+        border: 1px solid #2f3136;
+        border-radius: 4px;
+        color: #d3d3d3;
+      }
+      #gifResults {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        background: #2f3136;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      #gifResults img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: transform 0.2s;
+      }
+      #gifResults img:hover {
+        transform: scale(1.05);
+        outline: 2px solid #4a90e2;
+      }
+
+      /* Avatar Modal Özeli */
+      #saveAvatarButton {
+        background-color: #43b581;
+        border: none;
+        padding: 10px 20px;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      #saveAvatarButton:hover {
+        background-color: #3aa576;
+      }
+
+      /* Admin kısıtlı kanal için stil */
+      .admin-only-input {
+        background: #3f4247 !important; /* Gri ton */
+        color: #8a8a8a !important;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Sunucu</h2>
+      <div class="channel-item" onclick="joinChannel('1', this)">
+        9.Sınıflar
+      </div>
+      <div class="channel-item" onclick="joinChannel('2', this)">
+        10.Sınıflar
+      </div>
+      <div class="channel-item" onclick="joinChannel('3', this)">
+        AGANİGGALAR
+      </div>
+      <div class="channel-item" onclick="joinChannel('4', this)">
+        12.Sınıflar Kanalı
+      </div>
+      <div class="channel-item" onclick="joinChannel('5', this)">
+        OYUNLAR KANALI
+      </div>
+      <a href="/drawing" target="_blank" class="channel-link">
+        ÇİZİM KANALI 🎨 (Yeni Pencere)
+      </a>
+
+      <div class="user-list">
+        <h2 id="onlineUsersTitle">
+          Online Kullanıcılar (<span id="onlineCount">0</span>)
+        </h2>
+        <div id="onlineUserList"></div>
+        <h2 id="offlineUsersTitle">
+          Çevrimdışı Kullanıcılar (<span id="offlineCount">0</span>)
+        </h2>
+        <div id="offlineUserList"></div>
+      </div>
+
+      <div class="user-panel">
+        <div class="user-info">
+          <img
+            id="myAvatar"
+            class="user-avatar"
+            src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+            alt="Avatar"
+            onclick="openAvatarModal()"
+          />
+          <div class="user-names">
+            <strong id="myUsernameDisplay">Kullanıcı</strong>
+            <small>Çevrimiçi</small>
+          </div>
+        </div>
+        <div class="user-controls"></div>
+      </div>
+    </div>
+
+    <div class="chat-area" id="channel-1">
+      <div class="chat-header">
+        <h1>#9.Sınıflar</h1>
+        <span class="creator-info">babapromusto® tarafından yapılmıştır</span>
+      </div>
+      <div id="messages-container-1" class="messages-container"></div>
+      <div class="input-wrapper">
+        <div class="input-container">
+          <button onclick="openGifModal()">GIF</button>
+          <input
+            type="text"
+            id="messageInput-1"
+            placeholder="#9.Sınıflar'a mesaj gönder"
+            onkeydown="handleKeyDown(event, '1')"
+          />
+          <button onclick="sendMessage('1')">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-area" id="channel-2">
+      <div class="chat-header">
+        <h1>#10.Sınıflar</h1>
+        <span class="creator-info">babapromusto® tarafından yapılmıştır</span>
+      </div>
+      <div id="messages-container-2" class="messages-container"></div>
+      <div class="input-wrapper">
+        <div class="input-container">
+          <button onclick="openGifModal()">GIF</button>
+          <input
+            type="text"
+            id="messageInput-2"
+            placeholder="#10.Sınıflar'a mesaj gönder"
+            onkeydown="handleKeyDown(event, '2')"
+          />
+          <button onclick="sendMessage('2')">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-area" id="channel-3">
+      <div class="chat-header">
+        <h1>#AGANİGGALAR</h1>
+        <span class="creator-info">babapromusto® tarafından yapılmıştır</span>
+      </div>
+      <div id="messages-container-3" class="messages-container"></div>
+      <div class="input-wrapper">
+        <div class="input-container">
+          <button onclick="openGifModal()">GIF</button>
+          <input
+            type="text"
+            id="messageInput-3"
+            placeholder="#AGANİGGALAR'a mesaj gönder"
+            onkeydown="handleKeyDown(event, '3')"
+          />
+          <button onclick="sendMessage('3')">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-area" id="channel-4">
+      <div class="chat-header">
+        <h1>#12.Sınıflar Kanalı</h1>
+        <span class="creator-info">babapromusto® tarafından yapılmıştır</span>
+      </div>
+      <div id="messages-container-4" class="messages-container"></div>
+      <div class="input-wrapper">
+        <div class="input-container">
+          <button onclick="openGifModal()">GIF</button>
+          <input
+            type="text"
+            id="messageInput-4"
+            placeholder="#12.Sınıflar Kanalı'na mesaj gönder"
+            onkeydown="handleKeyDown(event, '4')"
+          />
+          <button onclick="sendMessage('4')">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-area" id="channel-5">
+      <div class="chat-header">
+        <h1>#OYUNLAR KANALI</h1>
+        <span class="creator-info">babapromusto® tarafından yapılmıştır</span>
+      </div>
+      <div id="messages-container-5" class="messages-container"></div>
+      <div class="input-wrapper">
+        <div class="input-container">
+          <button onclick="openGifModal()">GIF</button>
+          <input
+            type="text"
+            id="messageInput-5"
+            placeholder="#OYUNLAR KANALI'na mesaj gönder"
+            onkeydown="handleKeyDown(event, '5')"
+          />
+          <button onclick="sendMessage('5')">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      id="gifModal"
+      class="modal"
+      onclick="if(event.target.id === 'gifModal') closeGifModal()"
+    >
+      <div class="modal-content">
+        <span class="close-button" onclick="closeGifModal()">&times;</span>
+        <h2>GIF Ara</h2>
+        <input
+          type="text"
+          id="gifSearchInput"
+          placeholder="GIF arayın..."
+          onkeyup="searchGif(event)"
+        />
+        <div id="gifResults"></div>
+      </div>
+    </div>
+
+    <div
+      id="avatarModal"
+      class="modal"
+      onclick="if(event.target.id === 'avatarModal') closeAvatarModal()"
+    >
+      <div class="modal-content">
+        <span class="close-button" onclick="closeAvatarModal()">&times;</span>
+        <h2>Profil Fotoğrafını Değiştir</h2>
+        <p>Lütfen bir resim URL'si girin (örn: https://.../avatar.png)</p>
+        <input
+          type="url"
+          id="avatarUrlInput"
+          placeholder="Yeni avatar URL'si"
+        />
+        <button id="saveAvatarButton" onclick="saveAvatar()">Kaydet</button>
+      </div>
+    </div>
+    <script
+      src="https://kit.fontawesome.com/a076d05399.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      let currentChannel = null;
+      let username = null;
+      let isAdmin = false; // Yeni: Admin yetkisi
+      let userAvatars = {}; // Yeni: Kullanıcı avatarlarını saklamak için
+      let lastMessageInfo = { username: null, time: 0 };
+
+      const DEFAULT_AVATAR =
+        "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
+
+      const channelNames = {
+        1: "9.Sınıflar",
+        2: "10.Sınıflar",
+        3: "AGANİGGALAR",
+        4: "12.Sınıflar Kanalı",
+        5: "OYUNLAR KANALI", // Yeni kanal
+      };
+
+      // URL’den kullanıcı adı ve avatarı al
+      window.addEventListener("load", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        username = urlParams.get("username");
+        if (username) {
+          username = decodeURIComponent(username);
+          isAdmin = username.toLowerCase() === "ref321"; // Yeni: Admin kontrolü
+          socket.emit("setUsername", username);
+          document.getElementById("myUsernameDisplay").textContent = username;
+        } else {
+          console.error("Kullanıcı adı bulunamadı! Giriş yapınız.");
+        }
+
+        const firstChannelItem = document.querySelector(".channel-item");
+        if (firstChannelItem) {
+          joinChannel("1", firstChannelItem);
+        }
+      });
+
+      // Yeni: Avatar Modal Fonksiyonları
+      function openAvatarModal() {
+        document.getElementById("avatarModal").style.display = "flex";
+        document.getElementById("avatarUrlInput").value =
+          userAvatars[username] !== DEFAULT_AVATAR ? userAvatars[username] : "";
+      }
+
+      function closeAvatarModal() {
+        document.getElementById("avatarModal").style.display = "none";
+      }
+
+      function saveAvatar() {
+        const newAvatarUrl = document
+          .getElementById("avatarUrlInput")
+          .value.trim();
+        if (newAvatarUrl) {
+          socket.emit("setAvatar", newAvatarUrl);
+          userAvatars[username] = newAvatarUrl;
+          document.getElementById("myAvatar").src = newAvatarUrl;
+          closeAvatarModal();
+        } else {
+          alert("Lütfen geçerli bir resim URL'si girin.");
+        }
+      }
+
+      // Yeni: Avatar listesini sunucudan al
+      socket.on("loadAvatars", (avatars) => {
+        userAvatars = avatars;
+        const myAvatarUrl = userAvatars[username] || DEFAULT_AVATAR;
+        document.getElementById("myAvatar").src = myAvatarUrl;
+      });
+
+      function joinChannel(channelId, element) {
+        if (currentChannel) {
+          document
+            .getElementById(`channel-${currentChannel}`)
+            .classList.remove("active");
+          const previouslySelected = document.querySelector(
+            ".channel-item.selected"
+          );
+          if (previouslySelected) {
+            previouslySelected.classList.remove("selected");
+          }
+        }
+
+        currentChannel = channelId;
+        document.getElementById(`channel-${channelId}`).classList.add("active");
+        element.classList.add("selected");
+
+        socket.emit("joinChannel", channelId);
+
+        lastMessageInfo = { username: null, time: 0 };
+
+        const channelName = channelNames[channelId];
+        const input = document.getElementById(`messageInput-${channelId}`);
+        const sendButton = input.nextElementSibling;
+        const gifButton = input.previousElementSibling;
+
+        // Admin Kısıtlı Kanal Kontrolü
+        if (channelId === "5" && !isAdmin) {
+          input.disabled = true;
+          input.placeholder = "Sadece adminler bu kanala yazabilir!";
+          input.classList.add("admin-only-input");
+          sendButton.disabled = true;
+          gifButton.disabled = true;
+        } else {
+          input.disabled = false;
+          input.placeholder = `#${channelName}'a mesaj gönder`;
+          input.classList.remove("admin-only-input");
+          sendButton.disabled = false;
+          gifButton.disabled = false;
+        }
+      }
+
+      function handleKeyDown(event, channelId) {
+        if (event.key === "Enter") {
+          sendMessage(channelId);
+        }
+      }
+
+      function sendMessage(channelId, isGif = false, gifUrl = null) {
+        // Admin kontrolü tekrar
+        if (channelId === "5" && !isAdmin) return;
+
+        const input = document.getElementById(`messageInput-${channelId}`);
+        let msg = input.value.trim();
+
+        if (isGif && gifUrl) {
+          msg = gifUrl;
+        } else if (!msg) {
+          return;
+        }
+
+        if (username) {
+          socket.emit("chatMessage", {
+            text: msg,
+            username: username,
+            isGif: isGif,
+          });
+
+          if (!isGif) {
+            input.value = "";
+          }
+        }
+        closeGifModal();
+      }
+
+      function deleteMessage(messageId, messageUsername) {
+        if (!currentChannel) return;
+
+        // Mesajı sadece kendi mesajıysa VEYA adminse silebilir
+        const canDelete = isAdmin || messageUsername === username;
+
+        if (canDelete) {
+          if (confirm(`Bu mesajı silmek istediğinizden emin misiniz?`)) {
+            socket.emit("deleteMessage", {
+              channelId: currentChannel,
+              messageId: messageId,
+            });
+          }
+        } else {
+          alert("Bu mesajı silme yetkiniz yok.");
+        }
+      }
+
+      // GIF İşlevselliği (Değişiklik yok)
+      const TENOR_API_KEY = "LIVDSRZULELA"; // Tenor API Key
+      const gifModal = document.getElementById("gifModal");
+      const gifSearchInput = document.getElementById("gifSearchInput");
+      const gifResultsDiv = document.getElementById("gifResults");
+      let searchTimeout;
+
+      function openGifModal() {
+        if (!currentChannel) {
+          alert("Lütfen önce bir kanal seçin!");
+          return;
+        }
+        if (currentChannel === "5" && !isAdmin) {
+          alert("Sadece adminler GIF gönderebilir!");
+          return;
+        }
+        gifModal.style.display = "flex";
+        gifSearchInput.value = "";
+        gifResultsDiv.innerHTML = "";
+        setTimeout(() => {
+          gifSearchInput.focus();
+        }, 100);
+        fetchGifs(gifSearchInput.value);
+      }
+
+      function closeGifModal() {
+        gifModal.style.display = "none";
+      }
+
+      function searchGif(event) {
+        clearTimeout(searchTimeout);
+        if (event && event.key === "Enter") {
+          fetchGifs(gifSearchInput.value);
+          return;
+        }
+        searchTimeout = setTimeout(() => {
+          fetchGifs(gifSearchInput.value);
+        }, 500);
+      }
+
+      async function fetchGifs(query) {
+        const url = query
+          ? `https://g.tenor.com/v1/search?q=${encodeURIComponent(
+              query
+            )}&key=${TENOR_API_KEY}&limit=20&locale=tr`
+          : `https://g.tenor.com/v1/trending?key=${TENOR_API_KEY}&limit=20&locale=tr`;
+
+        gifResultsDiv.innerHTML =
+          '<div style="color:#b9bbbe;">Yükleniyor...</div>';
+
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          displayGifs(data.results);
+        } catch (error) {
+          console.error("GIF arama hatası:", error);
+          gifResultsDiv.innerHTML =
+            '<div style="color:red;">GIF yüklenemedi. Ağ bağlantınızı kontrol edin.</div>';
+        }
+      }
+
+      function displayGifs(gifs) {
+        gifResultsDiv.innerHTML = "";
+        gifs.forEach((gif) => {
+          const imgUrl = gif.media[0].tinygif.url;
+          const originalUrl = gif.media[0].gif.url;
+          const img = document.createElement("img");
+          img.src = imgUrl;
+          img.alt = gif.content_description || "GIF";
+          img.onclick = () => sendMessage(currentChannel, true, originalUrl);
+          gifResultsDiv.appendChild(img);
+        });
+        if (gifs.length === 0) {
+          gifResultsDiv.innerHTML =
+            '<div style="color:#b9bbbe;">Aradığınız GIF bulunamadı.</div>';
+        }
+      }
+
+      // Kullanıcı listelerini güncelle (Değişiklik yok)
+      socket.on("updateUsers", ({ activeUsers, allUsers }) => {
+        const onlineUserListDiv = document.getElementById("onlineUserList");
+        const offlineUserListDiv = document.getElementById("offlineUserList");
+        const onlineCountSpan = document.getElementById("onlineCount");
+        const offlineCountSpan = document.getElementById("offlineCount");
+
+        onlineUserListDiv.innerHTML = "";
+        offlineUserListDiv.innerHTML = "";
+
+        const onlineUsernames = new Set(activeUsers);
+        let onlineCount = 0;
+        let offlineCount = 0;
+
+        // Admini listelerde en üste taşı
+        const sortedAllUsers = allUsers.sort((a, b) => {
+          if (a.toLowerCase() === "ref321") return -1;
+          if (b.toLowerCase() === "ref321") return 1;
+          return a.localeCompare(b);
+        });
+
+        sortedAllUsers.forEach((user) => {
+          const div = document.createElement("div");
+          div.className = "user-item";
+
+          // Admin etiketi ekle
+          const adminTag =
+            user.toLowerCase() === "ref321"
+              ? ' <span style="color: #f0b938; font-weight: bold;">(Admin)</span>'
+              : "";
+
+          if (onlineUsernames.has(user)) {
+            onlineCount++;
+            div.innerHTML = `<span class="status online"></span>${user}${adminTag}`;
+            onlineUserListDiv.appendChild(div);
+          } else {
+            offlineCount++;
+            div.innerHTML = `<span class="status offline"></span>${user}${adminTag}`;
+            offlineUserListDiv.appendChild(div);
+          }
+        });
+
+        onlineCountSpan.textContent = onlineCount;
+        offlineCountSpan.textContent = offlineCount;
+
+        document.getElementById("onlineUsersTitle").style.display =
+          onlineCount > 0 ? "block" : "none";
+        document.getElementById("offlineUsersTitle").style.display =
+          offlineCount > 0 ? "block" : "none";
+      });
+
+      // Mesaj gösterme fonksiyonu
+      function displayMessage(msg, channelId) {
+        const messagesDiv = document.getElementById(
+          `messages-container-${channelId}`
+        );
+
+        if (msg.isPinned) {
+          const pinnedDiv = document.createElement("div");
+          pinnedDiv.className = "pinned-message";
+          pinnedDiv.innerHTML = `<strong>📌 SABİTLENMİŞ MESAJ:</strong> ${msg.text}`;
+          messagesDiv.prepend(pinnedDiv);
+          return; // Sabit mesajlar normal akışa dahil edilmez
+        }
+
+        const div = document.createElement("div");
+        div.id = `msg-${msg.id}`;
+
+        // Sabit mesajdan sonra geliyorsa compact'ı sıfırla
+        const isCompact = lastMessageInfo.username === msg.username;
+        div.className = "message" + (isCompact ? " compact" : "");
+
+        let contentHtml = "";
+        if (msg.isGif) {
+          contentHtml = `<img src="${msg.text}" class="gif" alt="GIF Mesajı">`;
+        } else {
+          let text = msg.text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); // XSS koruması
+          text = text.replace(/@(\w+)/g, (match) => {
+            return `<strong style="color: #4a90e2; font-weight: normal;">${match}</strong>`;
+          });
+          text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+          contentHtml = `<span class="message-text">${text}</span>`;
+        }
+
+        // Avatarı kullanıcıAvatars objesinden al
+        const avatarUrl = userAvatars[msg.username] || DEFAULT_AVATAR;
+        const isAdminMessage = msg.username.toLowerCase() === "ref321";
+        const usernameColor = isAdminMessage ? "#f0b938" : "#fff"; // Admin için sarı renk
+
+        // Admin veya kendi mesajıysa silme butonu
+        const deleteButtonHtml =
+          isAdmin || msg.username === username
+            ? `<button class="delete-button" onclick="deleteMessage('${msg.id}', '${msg.username}')">Sil</button>`
+            : "";
+
+        const messageHeaderHtml = isCompact
+          ? ""
+          : `
+              <div class="message-header">
+                  <span class="username" style="color: ${usernameColor}">${msg.username}</span>
+                  <span class="time">${msg.time}</span>
+              </div>
+            `;
+
+        const avatarHtml = `
+              <div class="message-avatar">
+                  <img src="${avatarUrl}" alt="${msg.username} Avatar">
+              </div>
+            `;
+
+        div.innerHTML = `
+                ${avatarHtml}
+                <div class="message-content-wrapper">
+                    ${messageHeaderHtml}
+                    ${contentHtml}
+                </div>
+                ${deleteButtonHtml}
+              `;
+
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        if (!isCompact) {
+          lastMessageInfo.username = msg.username;
+        }
+      }
+
+      socket.on("chatMessage", (msg) => {
+        if (currentChannel) {
+          displayMessage(msg, currentChannel);
+        }
+      });
+
+      socket.on("loadMessages", ({ messages, pinnedMessage }) => {
+        if (currentChannel) {
+          const messagesDiv = document.getElementById(
+            `messages-container-${currentChannel}`
+          );
+          messagesDiv.innerHTML = "";
+          lastMessageInfo = { username: null, time: 0 };
+
+          // Önce sabitlenmiş mesajı göster
+          if (pinnedMessage) {
+            displayMessage(pinnedMessage, currentChannel);
+          }
+
+          messages.forEach((msg) => {
+            displayMessage(msg, currentChannel);
+          });
+        }
+      });
+
+      socket.on("messageDeleted", ({ messageId }) => {
+        const messageElement = document.getElementById(`msg-${messageId}`);
+        if (messageElement) {
+          messageElement.remove();
+        }
+      });
+    </script>
+  </body>
+</html>
