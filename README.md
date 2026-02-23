@@ -8,7 +8,3 @@ Add your [configuration](https://codesandbox.io/docs/projects/learn/setting-up/t
 
 We run `yarn start` to start an HTTP server that runs on http://localhost:8080. You can open new or existing devtools with the + button next to the devtool tabs.
 
-## Resources
-
-- [CodeSandbox — Docs](https://codesandbox.io/docs)
-- [CodeSandbox — Discord](https://discord.gg/Ggarp3pX5H)
